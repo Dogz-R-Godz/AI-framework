@@ -413,11 +413,11 @@ class NEAT:
         final_bots=[]
         final_bots_mutations=[]
         bot_score_number=list(species_2_organised.keys())
-        while len(final_bots)<10:
+        while len(final_bots)<500:
             for x in species_2_organised[bot_score_number[0]]:
                 final_bots.append(x)
             bot_score_number.pop(0)
-        while len(final_bots)>10:
+        while len(final_bots)>500:
             final_bots.pop()
         bots_number=0
         while done_breeding==False:
@@ -430,7 +430,7 @@ class NEAT:
                             curr_combo.append(y)
                         else:
                             curr_combo.append(y)
-                            curr_bot_thing=self.get_offspring(curr_combo,do_mutation=True,bots_to_make=8,include_parents=True,mutation_neuron=mutation_neuron,mutation_chances=10) #(curr_combo,True,8,True,mutation_neuron)
+                            curr_bot_thing=self.get_offspring(curr_combo,do_mutation=True,bots_to_make=8,include_parents=True,mutation_neuron=mutation_neuron,mutation_chances=75) #(curr_combo,True,8,True,mutation_neuron)
                             final_bots+=curr_bot_thing[0]
                             final_bots_mutations.append(curr_bot_thing[1])
                             bots_number+=10
