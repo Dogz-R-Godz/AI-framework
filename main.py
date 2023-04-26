@@ -5,20 +5,20 @@ from main_importer import *
 
 
 game_rotator={"snake":"minesweeper","minesweeper":"roller","roller":"donkery kong","donkery kong":"pong","pong":"tetris","tetris":"snake"} #impliment this properly later
-game_requirements={"snake":[34,4],"minesweeper":[81,160],"roller":[5,2],"donkery kong":[30,3],"pong":[9,2],"tetris":[208,6]} #inputs and outputs for different games
+game_requirements={"snake":[86,4],"minesweeper":[81,160],"roller":[5,2],"donkery kong":[30,3],"pong":[9,2],"tetris":[208,6]} #inputs and outputs for different games #snake is usially 34 inputs.
 output_decoder={"snake":{1:"Left",2:"Up",3:"Down",4:"Right",0:"Right"},"minesweeper":{},"roller":{1:(1,0),2:(0,1)}}
 backwards_decoder={"Left":"Right","Right":"Left","Up":"Down","Down":"Up"}
 curr_game="snake"
 bot=neat.NEAT(game_requirements[curr_game][0],game_requirements[curr_game][1])
 
-
+AI_visual_mode=0 #0 is off, 1 is on (depending on the game, where the AI can see), 2 is just a better 1
 evolving_neurons=False
 
 oreintation="up"
 if oreintation=="up":
-    neurons_rows_columns=[20,2]
+    neurons_rows_columns=[15,3]
 else:
-    neurons_rows_columns=[2,20]
+    neurons_rows_columns=[3,15]
 spacing=[500/neurons_rows_columns[0],300/neurons_rows_columns[1]]
 
 if not evolving_neurons:
@@ -26,12 +26,12 @@ if not evolving_neurons:
         for x in range(neurons_rows_columns[0]):
             bot.middle[len(bot.middle)+1]=((spacing[0]*x)+(spacing[0]/2)+500,(spacing[1]*y)+(spacing[1]/2)+100)
 #textures
-bots=bot.start(750,True,evolving_neurons,neurons_rows_columns)
+bots=bot.start(100,True,evolving_neurons,neurons_rows_columns)
 screen = pygame.display.set_mode((1000, 500))
 clock = pygame.time.Clock()
 tape = pygame.image.load("tape.png").convert() #400,200
 tape = pygame.transform.scale(tape, (40,20))
-
+cool_mode=True
 
 speed=5
 warnings=[]
@@ -43,16 +43,16 @@ for x in range(len(bots)):
 #bots[5]["score"]=1
 #bot.get_offspring([curr_bot,bots.pop(5)],True,1000,True) #never activate this again, This is why everything messed up.
 curr_bot=bots.pop(0)
-def run_correct_game(curr_game,pos,rotation,vel,inputs,death_laser_distance,training_mode):
+def run_correct_game(curr_game,pos,rotation,vel,inputs,death_laser_distance,training_mode,AI_visual_mode):
     if curr_game=="roller":
         new_pos,new_vel,instructions,death_laser_distance,new_rotation,inputs_for_AI,alive,score=roller.run_frame(pos,rotation,vel,inputs,death_laser_distance)
     elif curr_game=="snake":
-        new_pos,new_rotation,instructions,new_vel,death_laser_distance,inputs_for_AI,alive,score=snake.run_frame(pos,rotation,vel,inputs,death_laser_distance,training_mode=training_mode) #rotation is the apple pos, vel is the body, and death_laser_distance is the hunger
+        new_pos,new_rotation,instructions,new_vel,death_laser_distance,inputs_for_AI,alive,score=snake.run_frame(pos,rotation,vel,inputs,death_laser_distance,training_mode=training_mode,AI_visual_mode=AI_visual_mode) #rotation is the apple pos, vel is the body, and death_laser_distance is the hunger
 
     return new_pos,new_vel,instructions,death_laser_distance,new_rotation,inputs_for_AI,alive,score
 pygame.init()
 def start_new_game(curr_game):
-    global speed,pos,vel,death_laser_distance,rotation,generation,generation_counter,proper_output,training_mode
+    global speed,pos,vel,death_laser_distance,rotation,generation,generation_counter,proper_output,training_mode,AI_visual_mode
     if curr_game=="roller":
         #speed=10
         proper_output=(0,0)
@@ -63,12 +63,28 @@ def start_new_game(curr_game):
         pos=(23,25)
         proper_output="Right"
         vel=[(23,25),(22,25),(21,25)]
-        apple_positions=random.randint(0,1)
-        if apple_positions==0:
-            rotation=random.choice([(random.randint(28,48),25),(random.randint(2,22),25),(25,random.randint(28,48)),(25,random.randint(2,22))])
-        else:
-            thing=random.choice([random.randint(28,48),random.randint(2,22)])
-            rotation=(thing,thing)
+        #apple_positions=random.randint(0,1)
+        #if apple_positions==0:
+            #rotation=random.choice([(random.randint(28,48),25),(random.randint(2,22),25),(25,random.randint(28,48)),(25,random.randint(2,22))])
+        #else:
+            #thing=random.choice([random.randint(28,48),random.randint(2,22)])
+            #rotation=(thing,thing)
+        rotation=(random.randint(1,50),random.randint(1,50))
+        while rotation in vel or rotation == pos:
+            rotation=(random.randint(1,50),random.randint(1,50))
+            
+        death_laser_distance=0
+    elif curr_game=="minesweeper":
+        vel={}
+        free_spots=[]
+        for x in range(50):
+            for y in range(50):
+                x2=x+1
+                y2=y+1
+                vel[x2,y2]="free"
+                free_spots.append((x2,y2))
+        for x in range(100):
+            vel[free_spots.pop(random.randint(0,len(free_spots)-1))]="mine"
         #while rotation in vel or rotation == pos:
             #rotation=(random.randint(1,50),random.randint(1,50))
         
@@ -90,8 +106,9 @@ def start_new_game(curr_game):
     fps=font.render(fps_text,True,(0,0,0))
     screen.blit(fps,(990-font.size(fps_text)[0],1))
 
-    pos,vel,instructions,death_laser_distance,rotation,AI_inputs,alive,score=run_correct_game(curr_game,pos,rotation,vel,proper_output,death_laser_distance,training_mode=training_mode)#max(5-math.floor(pos[0]/4000),0)
-    output=bot.get_output(AI_inputs,bots[0])[1]
+    pos,vel,instructions,death_laser_distance,rotation,AI_inputs,alive,score=run_correct_game(curr_game,pos,rotation,vel,proper_output,death_laser_distance,training_mode=training_mode,AI_visual_mode=AI_visual_mode)#max(5-math.floor(pos[0]/4000),0)
+    output1=bot.get_output(AI_inputs,bots[0])
+    output=output1[1]
     for x in range(bot.inputs):
         input_locations[x]=((500+(x*(500/bot.inputs)))+(500/bot.inputs)/2,50)
         pygame.draw.circle(screen,((50*(1-round(AI_inputs[x+1])))+100,255,(50*(1-round(AI_inputs[x+1])))+100),input_locations[x],(min((500/bot.inputs)/3,15)))
@@ -173,6 +190,8 @@ alivent=0
 running=True
 dead=False
 
+
+
 fps_timer=0
 bot_brains=[]
 
@@ -186,13 +205,20 @@ while running:
             if event.key==pygame.K_SPACE:
                 if boosted==0:
                     boosted=1
-                    speed=500
+                    speed=250
                 elif boosted==1:
                     boosted=2
-                    speed=5000
+                    speed=1000
                 else:
                     boosted=0
                     speed=10
+            if event.key==pygame.K_v:
+                if AI_visual_mode==0:
+                    AI_visual_mode=1
+                elif AI_visual_mode==1:
+                    AI_visual_mode=2
+                else:
+                    AI_visual_mode=0
             if event.key==pygame.K_p:
                 if training_mode:training_mode=False
                 else:training_mode=True
@@ -214,7 +240,7 @@ while running:
     #test_inputs={}
     
     old_pos=(pos[0],pos[1])
-    pos,vel,instructions,death_laser_distance,rotation,AI_inputs,alive,score=run_correct_game(curr_game,pos,rotation,vel,proper_output,death_laser_distance,training_mode=training_mode)#max(5-math.floor(pos[0]/4000),0)
+    pos,vel,instructions,death_laser_distance,rotation,AI_inputs,alive,score=run_correct_game(curr_game,pos,rotation,vel,proper_output,death_laser_distance,training_mode=training_mode,AI_visual_mode=AI_visual_mode)#max(5-math.floor(pos[0]/4000),0)
     
     #print(AI_inputs)
 
